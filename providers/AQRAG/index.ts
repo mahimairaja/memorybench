@@ -1,6 +1,10 @@
 import type { BenchmarkRegistry, BenchmarkType } from "../../benchmarks";
 import type { PreparedData, TemplateType } from "../_template";
 
+import { initDatabase } from "./src/db";
+
+await initDatabase();
+
 export default {
 	name: "AQRAG",
 	addContext: async (data: PreparedData) => {
@@ -21,7 +25,7 @@ export default {
 	): PreparedData[] => {
 		switch (benchmarkType) {
 			case "RAG": {
-				const ragData = data as BenchmarkRegistry['RAG'][];
+				const ragData = data as BenchmarkRegistry["RAG"][];
 				return ragData.map((item) => ({
 					context: `AQRAG Format:\nQuery: ${item.question}\n\nContext Sources:\n${item.documents.map((d, idx) => `[${idx + 1}] ${d.title || `Source ${idx + 1}`}:\n${d.content}`).join("\n\n")}`,
 					metadata: {

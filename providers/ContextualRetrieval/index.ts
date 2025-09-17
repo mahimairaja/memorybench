@@ -1,5 +1,8 @@
 import type { BenchmarkRegistry, BenchmarkType } from "../../benchmarks";
 import type { PreparedData, TemplateType } from "../_template";
+import { initDatabase } from "./src/db";
+
+await initDatabase();
 
 export default {
 	name: "ContextualRetrieval",

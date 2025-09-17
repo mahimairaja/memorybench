@@ -1,6 +1,8 @@
-# Anthropic Contextual Retrieval Provider
+# AQRAG Provider
 
 This directory contains the RAG (Retrieval-Augmented Generation) provider implementation with PostgreSQL and pgvector for vector similarity search.
+
+This db has the anticipatory questions in the table schema (everything else is)
 
 ## Database Setup with Docker
 

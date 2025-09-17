@@ -10,6 +10,10 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "ai": "^5.0.44"
+    "@ai-sdk/anthropic": "^2.0.17",
+    "@ai-sdk/google": "^2.0.14",
+    "ai": "^5.0.44",
+    "dedent": "^1.7.0",
+    "zod": "^4.1.9"
   }
 }
