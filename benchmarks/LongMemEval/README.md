@@ -90,8 +90,10 @@ All evaluations use `gpt-4o` as the fixed "gold standard" judge.
 From `memorybench/benchmarks/LongMemEval`:
 
 ```bash
-./scripts/evaluate/evaluate-batch.sh --runId=<runId> --answeringModel=<model> [--questionType=<questionType>] [--startPosition=<startPos>] [--endPosition=<endPos>]
+./scripts/evaluate/evaluate-batch.sh --runId=<runId> [--answeringModel=<model>] [--questionType=<questionType>] [--startPosition=<startPos>] [--endPosition=<endPos>]
 ```
+
+If `answeringModel` is not specified, it defaults to `gpt-4o`.
 
 ## Available Question Types
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Batch evaluation script for LongMemEval results
-# Usage: ./evaluate-batch.sh --runId=<runId> [--questionType=<questionType>] [--startPosition=<startPos>] [--endPosition=<endPos>]
+# Usage: ./evaluate-batch.sh --runId=<runId> [--answeringModel=<model>] [--questionType=<questionType>] [--startPosition=<startPos>] [--endPosition=<endPos>]
 
 set -e
 
@@ -10,6 +10,7 @@ parse_args() {
     while [ "$#" -gt 0 ]; do
         case "$1" in
             --runId=*) RUN_ID="${1#*=}" ;;
+            --answeringModel=*) ANSWERING_MODEL="${1#*=}" ;;
             --questionType=*) QUESTION_TYPE="${1#*=}" ;;
             --startPosition=*) START_POS="${1#*=}" ;;
             --endPosition=*) END_POS="${1#*=}" ;;
@@ -22,12 +23,14 @@ parse_args() {
 parse_args "$@"
 
 if [ -z "$RUN_ID" ]; then
-    echo "Usage: ./evaluate-batch.sh --runId=<runId> [--questionType=<questionType>] [--startPosition=<startPos>] [--endPosition=<endPos>]"
-    echo "Example: ./evaluate-batch.sh --runId=run1"
-    echo "Example: ./evaluate-batch.sh --runId=run1 --questionType=single-session-user"
-    echo "Example: ./evaluate-batch.sh --runId=run1 --questionType=single-session-user --startPosition=1 --endPosition=50"
+    echo "Usage: ./evaluate-batch.sh --runId=<runId> [--answeringModel=<model>] [--questionType=<questionType>] [--startPosition=<startPos>] [--endPosition=<endPos>]"
+    echo "Example: ./evaluate-batch.sh --runId=run1 --answeringModel=gpt-4o"
+    echo "Example: ./evaluate-batch.sh --runId=run1 --answeringModel=gpt-5 --questionType=single-session-user"
     exit 1
 fi
+
+# Default answering model if not provided
+ANSWERING_MODEL="${ANSWERING_MODEL:-gpt-4o}"
 
 # Get script directory and root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,7 +38,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 echo "Starting evaluation..."
 echo "Run ID: $RUN_ID"
-echo "Model: gemini-3-pro-preview"
+echo "Answering Model: $ANSWERING_MODEL"
 if [ -n "$QUESTION_TYPE" ]; then
     echo "Question type: $QUESTION_TYPE"
 else
@@ -49,12 +52,20 @@ else
 fi
 echo ""
 
-if [ -n "$START_POS" ] && [ -n "$END_POS" ]; then
-    # When using start/end pos, we must provide the question type argument (use "all" if not specified)
-    TYPE_ARG="${QUESTION_TYPE:-all}"
-    cd "$ROOT_DIR" && bun run scripts/evaluate/evaluate.ts "$RUN_ID" "$TYPE_ARG" "$START_POS" "$END_POS"
-elif [ -n "$QUESTION_TYPE" ]; then
-    cd "$ROOT_DIR" && bun run scripts/evaluate/evaluate.ts "$RUN_ID" "$QUESTION_TYPE"
-else
-    cd "$ROOT_DIR" && bun run scripts/evaluate/evaluate.ts "$RUN_ID"
+# Construct the command
+CMD="bun run scripts/evaluate/evaluate.ts \"$RUN_ID\" \"$ANSWERING_MODEL\""
+
+if [ -n "$QUESTION_TYPE" ]; then
+    CMD="$CMD \"$QUESTION_TYPE\""
+elif [ -n "$START_POS" ]; then
+    # If no question type but start pos is set, we must pass a placeholder for questionType
+    # evaluate.ts treats 'all' or undefined as no filter, but args are positional.
+    # evaluate.ts: const questionTypeFilter = args[2] === 'all' ? undefined : args[2];
+    CMD="$CMD \"all\""
 fi
+
+if [ -n "$START_POS" ] && [ -n "$END_POS" ]; then
+    CMD="$CMD \"$START_POS\" \"$END_POS\""
+fi
+
+cd "$ROOT_DIR" && eval "$CMD"
