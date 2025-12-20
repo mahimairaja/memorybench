@@ -210,6 +210,7 @@ The context contains search results from a memory system. Each result has multip
 4. Synthesize information from multiple results if needed
 
 Instructions:
+- First, think through the problem step by step. Show your reasoning process.
 - Identify which parts of the context are relevant to answering the question
 - Consider temporal relationships, sequences of events, and any updates to information over time
 - If the context contains enough information to answer the question, provide a clear, concise answer
@@ -217,7 +218,14 @@ Instructions:
 - Base your answer ONLY on the provided context
 - **Prioritize information from chunks** - they're the raw source material
 
-Answer:`;
+**Response Format:**
+Think step by step, then provide your answer.
+
+Reasoning:
+[Your step-by-step reasoning process here]
+
+Answer:
+[Your final answer here]`;
 
     try {
         const generateOptions: any = {
