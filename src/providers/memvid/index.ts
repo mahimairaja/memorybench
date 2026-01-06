@@ -17,18 +17,20 @@ const DATA_DIR = path.join(process.cwd(), "data", "memvid")
 export class MemVidProvider implements Provider {
   name = "memvid"
   
-  // Set lower concurrency since we are operating on local files
+  private instances = new Map<string, Promise<any>>()
+
   concurrency = {
-    default: 50, 
+    default: 50,
   }
+
 
   async initialize(_config: ProviderConfig): Promise<void> {
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true })
-      logger.info(`Initialized MemVid provider. Data directory: ${DATA_DIR}`)
+        await fs.mkdir(DATA_DIR, { recursive: true })
+        logger.info(`Initialized MemVid provider. Data directory: ${DATA_DIR}`)
     } catch (e) {
-      logger.error(`Failed to create data directory: ${e}`)
-      throw e
+        logger.error(`Failed to create data directory: ${e}`)
+        throw e
     }
   }
 
@@ -37,17 +39,33 @@ export class MemVidProvider implements Provider {
     return path.join(DATA_DIR, filename)
   }
 
-  async ingest(sessions: UnifiedSession[], options: IngestOptions): Promise<IngestResult> {
-    const filePath = this.getFilePath(options.containerTag)
-    
-    let mem
-    try {
-      await fs.access(filePath)
-      mem = await open(filePath, "basic", { readOnly: false })
-    } catch {
-      mem = await create(filePath)
+  private async getMem(containerTag: string): Promise<any> {
+    if (this.instances.has(containerTag)) {
+        return this.instances.get(containerTag)
     }
 
+    const promise = (async () => {
+        const filePath = this.getFilePath(containerTag)
+        try {
+            await fs.access(filePath)
+            return await open(filePath, "basic", { readOnly: false })
+        } catch {
+            return await create(filePath)
+        }
+    })()
+
+    this.instances.set(containerTag, promise)
+    
+    try {
+        return await promise
+    } catch (e) {
+        this.instances.delete(containerTag)
+        throw e
+    }
+  }
+
+  async ingest(sessions: UnifiedSession[], options: IngestOptions): Promise<IngestResult> {
+    const mem = await this.getMem(options.containerTag)
     const documentIds: string[] = []
 
     try {
@@ -69,7 +87,9 @@ export class MemVidProvider implements Provider {
         }
         
         await mem.seal()
-    } finally {
+    } catch (e) {
+        logger.error(`MemVid ingest error: ${e}`)
+        throw e
     }
 
     return { documentIds }
@@ -88,16 +108,7 @@ export class MemVidProvider implements Provider {
   }
 
   async search(query: string, options: SearchOptions): Promise<unknown[]> {
-    const filePath = this.getFilePath(options.containerTag)
-    
-    try {
-        await fs.access(filePath)
-    } catch {
-        logger.warn(`Memory file not found for ${options.containerTag}`)
-        return []
-    }
-
-    const mem = await open(filePath, "basic", { readOnly: true })
+    const mem = await this.getMem(options.containerTag)
     
     const results = await mem.find(query, {
         k: options.limit || 10,
@@ -111,6 +122,8 @@ export class MemVidProvider implements Provider {
   }
 
   async clear(containerTag: string): Promise<void> {
+    this.instances.delete(containerTag)
+
     const filePath = this.getFilePath(containerTag)
     try {
         await fs.unlink(filePath)
