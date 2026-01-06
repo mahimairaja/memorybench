@@ -6,6 +6,7 @@ export interface Config {
   openaiApiKey: string
   anthropicApiKey: string
   googleApiKey: string
+  memvidApiKey: string
 }
 
 export const config: Config = {
@@ -16,6 +17,7 @@ export const config: Config = {
   openaiApiKey: process.env.OPENAI_API_KEY || "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
   googleApiKey: process.env.GOOGLE_API_KEY || "",
+  memvidApiKey: process.env.MEMVID_API_KEY || "local", // No API key needed for local MemVid
 }
 
 export function getProviderConfig(provider: string): { apiKey: string; baseUrl?: string } {
@@ -26,6 +28,8 @@ export function getProviderConfig(provider: string): { apiKey: string; baseUrl?:
       return { apiKey: config.mem0ApiKey }
     case "zep":
       return { apiKey: config.zepApiKey }
+    case "memvid":
+      return { apiKey: config.memvidApiKey }
     default:
       throw new Error(`Unknown provider: ${provider}`)
   }
